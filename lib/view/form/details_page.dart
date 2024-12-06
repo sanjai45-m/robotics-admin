@@ -63,6 +63,16 @@ class _DetailPageState extends State<DetailPage> {
             ),
             const SizedBox(height: 10),
             ReuseWidgets().buildImpactDetails(details.impact),
+            const SizedBox(height: 20),
+            const Text(
+              "Images",
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal),
+            ),
+            const SizedBox(height: 10),
+            ReuseWidgets().buildImageList(details.images),
           ],
         ),
       ),

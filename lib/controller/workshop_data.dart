@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
-import 'package:jkv/model/workshop_templete.dart';
+import 'package:jkv/model/workshop_template.dart';
 
 class WorkshopDataProvider with ChangeNotifier {
   List<WorkshopModel> _workshopModel = [];
@@ -26,3 +26,4 @@ class WorkshopDataProvider with ChangeNotifier {
     notifyListeners();
   }
 }
+

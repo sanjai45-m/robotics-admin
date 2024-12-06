@@ -13,11 +13,11 @@ class AddWorkShop extends StatefulWidget {
 }
 
 class _AddWorkShopState extends State<AddWorkShop> {
-  GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   final dataController = TextEditingController();
   final workShopController = TextEditingController();
-  final CollegenameController = TextEditingController();
+  final collegeNameController = TextEditingController();
   File? _image;
   @override
   void dispose() {
@@ -39,11 +39,11 @@ class _AddWorkShopState extends State<AddWorkShop> {
     }
   }
   Future<void> _pickImage() async {
-    ImagePicker imagePicker = new ImagePicker();
-    final PickImage = await imagePicker.pickImage(source: ImageSource.camera);
-    if (PickImage != null) {
+    ImagePicker imagePicker =  ImagePicker();
+    final pickImage = await imagePicker.pickImage(source: ImageSource.gallery);
+    if (pickImage != null) {
       setState(() {
-        _image = File(PickImage.path);
+        _image = File(pickImage.path);
       });
     }
   }
@@ -64,7 +64,7 @@ class _AddWorkShopState extends State<AddWorkShop> {
       provider.addWorkshopModelData(
         parsedDate,
         workShopController.text,
-        CollegenameController.text,
+        collegeNameController.text,
         dataController.text,
         _image!,
       );
@@ -81,7 +81,7 @@ class _AddWorkShopState extends State<AddWorkShop> {
   _resetForm() {
     dataController.clear();
     workShopController.clear();
-    CollegenameController.clear();
+    collegeNameController.clear();
   }
 
   @override
@@ -125,6 +125,7 @@ class _AddWorkShopState extends State<AddWorkShop> {
                     if (value!.isEmpty) {
                       return "Enter the Workshop Name";
                     }
+                    return null;
                   },
                 ),
                 const SizedBox(height: 16), // Add spacing between fields
@@ -138,7 +139,7 @@ class _AddWorkShopState extends State<AddWorkShop> {
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
-                  controller: CollegenameController,
+                  controller: collegeNameController,
                   decoration: InputDecoration(
                     hintText: 'Enter the college name',
                     filled: true,
@@ -154,6 +155,7 @@ class _AddWorkShopState extends State<AddWorkShop> {
                     if (value!.isEmpty) {
                       return "Enter the College Name";
                     }
+                    return null;
                   },
                 ),
                 const SizedBox(height: 16),
@@ -186,6 +188,7 @@ class _AddWorkShopState extends State<AddWorkShop> {
                     if (value!.isEmpty) {
                       return "Choose Date";
                     }
+                    return null;
                   },
                 ),
                 const SizedBox(height: 24),

@@ -25,14 +25,18 @@ class AboutWorkshopDetails {
   final String objective;
   final List<String> futureScope;
   final Impact impact;
+  final List<File>? images; // List of images
 
-  AboutWorkshopDetails(
-      {required this.description,
-      required this.outcomes,
-      required this.objective,
-      required this.futureScope,
-      required this.impact});
+  AboutWorkshopDetails({
+    required this.description,
+    required this.outcomes,
+    required this.objective,
+    required this.futureScope,
+    required this.impact,
+    this.images, // Optional, default null
+  });
 }
+
 
 class Impact {
   final String students;
