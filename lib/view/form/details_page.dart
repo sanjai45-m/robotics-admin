@@ -3,6 +3,7 @@ import 'package:jkv/model/reuse_widgets.dart';
 import 'package:provider/provider.dart';
 
 import '../../controller/workshop_data.dart';
+import '../../model/workshop_template.dart';
 import 'details_form.dart';
 
 class DetailPage extends StatefulWidget {
@@ -15,10 +16,29 @@ class DetailPage extends StatefulWidget {
 
 class _DetailPageState extends State<DetailPage> {
   @override
+  void initState() {
+    super.initState();
+    final workshopDataProvider = Provider.of<WorkshopDataProvider>(context, listen: false);
+    if (workshopDataProvider.workshopModel.isEmpty) {
+      workshopDataProvider.fetchWorkshopsFromFirebase();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final workshop = Provider.of<WorkshopDataProvider>(context)
-        .workshopModel
-        .firstWhere((w) => w.id == widget.id);
+    final workshopDataProvider = Provider.of<WorkshopDataProvider>(context);
+    final workshop = workshopDataProvider.workshopModel.firstWhere(
+          (w) => w.id == widget.id,
+      // Assuming you have a static empty factory constructor
+    );
+
+
+    if (workshop == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Workshop Details')),
+        body: const Center(child: Text('Workshop not found')),
+      );
+    }
 
     final details = workshop.aboutWorkshopDetails;
 
@@ -46,13 +66,11 @@ class _DetailPageState extends State<DetailPage> {
                   color: Colors.teal),
             ),
             const SizedBox(height: 10),
-            ReuseWidgets()
-                .buildDetailCard("Description", details.description),
+            ReuseWidgets().buildDetailCard("Description", details.description),
+            ReuseWidgets().buildListCard("Technology Used", details.technologiesUsed),
             ReuseWidgets().buildListCard("Outcomes", details.outcomes),
-            ReuseWidgets()
-                .buildDetailCard("Objective", details.objective),
-            ReuseWidgets()
-                .buildListCard("Future Scope", details.futureScope),
+            ReuseWidgets().buildDetailCard("Objective", details.objective),
+            ReuseWidgets().buildListCard("Future Scope", details.futureScope),
             const SizedBox(height: 20),
             const Text(
               "Impact",
@@ -76,8 +94,9 @@ class _DetailPageState extends State<DetailPage> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        label: Text(details == null ? "Add" : "Edit"),
+      floatingActionButton: details == null
+          ? FloatingActionButton.extended(
+        label: const Text("Add"),
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -88,7 +107,9 @@ class _DetailPageState extends State<DetailPage> {
             ),
           );
         },
-      ),
+      )
+          : null, // Do not show the FAB if details are not null
     );
+
   }
 }

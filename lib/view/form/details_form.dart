@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -27,8 +28,9 @@ class _DetailsFormState extends State<DetailsForm> {
   final List<String> _futureScope = [];
   final TextEditingController _outcomeController = TextEditingController();
   final TextEditingController _futureScopeController = TextEditingController();
-
-  List<File> _selectedImages = []; // Store selected images
+  final List<String> _technologiesUsed = [];
+  final TextEditingController _technologiesUsedCOntroller = TextEditingController();
+  List<File> _selectedImages = []; // Store File objects
 
   @override
   void initState() {
@@ -46,7 +48,7 @@ class _DetailsFormState extends State<DetailsForm> {
     if (widget.existingDetails != null) {
       _outcomes.addAll(widget.existingDetails!.outcomes);
       _futureScope.addAll(widget.existingDetails!.futureScope);
-      _selectedImages.addAll(widget.existingDetails!.images ?? []);
+
     }
   }
 
@@ -62,9 +64,22 @@ class _DetailsFormState extends State<DetailsForm> {
     }
   }
 
+  Future<String> uploadImageToFirebase(File image) async {
+    try {
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('workshop_images/${DateTime.now().toIso8601String()}.jpg');
 
+      final uploadTask = storageRef.putFile(image);
+      final snapshot = await uploadTask.whenComplete(() {});
 
-
+      // Get the download URL of the uploaded image
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (error) {
+      throw Exception("Image upload failed: $error");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -194,7 +209,12 @@ class _DetailsFormState extends State<DetailsForm> {
                 ],
               ),
             ),
-
+            _buildListAdder(
+              "Technologies Used",
+              _technologiesUsed,
+              _technologiesUsedCOntroller,
+              Icons.lightbulb,
+            ),
             _buildListAdder(
               "Outcomes",
               _outcomes,
@@ -234,6 +254,7 @@ class _DetailsFormState extends State<DetailsForm> {
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
     );
   }
+
   Widget _buildListAdder(
       String label,
       List<String> list,
@@ -245,7 +266,6 @@ class _DetailsFormState extends State<DetailsForm> {
       icon: icon,
       child: Column(
         children: [
-          // TextField to add new items with better design
           TextField(
             controller: controller,
             decoration: InputDecoration(
@@ -272,7 +292,6 @@ class _DetailsFormState extends State<DetailsForm> {
             ),
           ),
           const SizedBox(height: 15),
-          // Displaying list of items with delete options
           Wrap(
             spacing: 10,
             children: list
@@ -298,9 +317,8 @@ class _DetailsFormState extends State<DetailsForm> {
                   });
                 },
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                elevation: 4,
               );
             })
                 .toList(),
@@ -310,53 +328,105 @@ class _DetailsFormState extends State<DetailsForm> {
     );
   }
 
-  void _saveDetails() {
-    final impact = Impact(
-      students: _impactStudentsController.text,
-      industry: _impactIndustryController.text,
-      research: _impactResearchController.text,
+  Widget _buildCard({
+    required String title,
+    required IconData icon,
+    required Widget child,
+  }) {
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
+      elevation: 5,
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: Colors.teal),
+                const SizedBox(width: 10),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.teal,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            child,
+          ],
+        ),
+      ),
     );
+  }
 
-    final details = AboutWorkshopDetails(
+  Future<void> _saveDetails() async {
+    if (_descriptionController.text.isEmpty ||
+        _objectiveController.text.isEmpty ||
+        _impactStudentsController.text.isEmpty ||
+        _impactIndustryController.text.isEmpty ||
+        _impactResearchController.text.isEmpty) {
+      return;
+    }
+
+    final List<String> imageUrls = [];
+
+    // Upload all images
+    for (File image in _selectedImages) {
+      try {
+        String url = await uploadImageToFirebase(image);
+        imageUrls.add(url);
+      } catch (error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Image upload failed: $error")),
+        );
+        return;
+      }
+    }
+
+    final workshopDetails = AboutWorkshopDetails(
       description: _descriptionController.text,
       objective: _objectiveController.text,
+      impact: Impact(
+        students: _impactStudentsController.text,
+        industry: _impactIndustryController.text,
+        research: _impactResearchController.text,
+      ),
       outcomes: _outcomes,
       futureScope: _futureScope,
-      impact: impact,
-      images: _selectedImages, // Add images
+      technologiesUsed: _technologiesUsed,
+      images: imageUrls,
     );
 
-    Provider.of<WorkshopDataProvider>(context, listen: false)
-        .addWorkshopDetails(widget.id, details);
+    // Access the data provider
+    final workshopDataProvider = Provider.of<WorkshopDataProvider>(context, listen: false);
+
+    // Check if it's an existing workshop or new workshop
+    if (widget.existingDetails != null) {
+      // Edit existing workshop
+      workshopDataProvider.updateWorkshopDetailsInFirebase(widget.id, workshopDetails);
+    } else {
+      // Add new workshop
+      workshopDataProvider.addWorkshopDetails(widget.id, workshopDetails);
+    }
+
+    // Send the updated data to Firebase
+    final workshop = workshopDataProvider.workshopModel.firstWhere((w) => w.id == widget.id);
+    await workshopDataProvider.sendWorkshopToFirebase(workshop);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Details saved successfully")),
+    );
 
     Navigator.pop(context);
   }
-}
-Widget _buildCard({
-  required String title,
-  required IconData icon,
-  required Widget child,
-}) {
-  return Card(
-    elevation: 5,
-    margin: const EdgeInsets.symmetric(vertical: 10),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-    child: Padding(
-      padding: const EdgeInsets.all(12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: Colors.teal),
-              const SizedBox(width: 10),
-              Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          child,
-        ],
-      ),
-    ),
-  );
+
+
+
+
 }

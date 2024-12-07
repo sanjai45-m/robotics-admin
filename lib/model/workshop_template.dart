@@ -1,42 +1,40 @@
-import 'dart:io';
-
 class WorkshopModel {
   final DateTime id;
   final String workshopName;
   final String collegeName;
   final String dateTime;
-  final File? image;
-  AboutWorkshopDetails? aboutWorkshopDetails; // Optional field
+  final String? imageUrl; // Changed to String for image URL
+  AboutWorkshopDetails? aboutWorkshopDetails;
 
   WorkshopModel(
       this.id, {
         required this.workshopName,
         required this.collegeName,
         required this.dateTime,
-        required this.image,
-        this.aboutWorkshopDetails, // Remove "required"
+        this.imageUrl, // Optional, this is the URL of the image
+        this.aboutWorkshopDetails,
       });
 }
-
 
 class AboutWorkshopDetails {
   final String description;
   final List<String> outcomes;
+  final List<String> technologiesUsed;
   final String objective;
   final List<String> futureScope;
   final Impact impact;
-  final List<File>? images; // List of images
+  final List<String>? images; // List of image URLs
 
   AboutWorkshopDetails({
     required this.description,
     required this.outcomes,
+    required this.technologiesUsed,
     required this.objective,
     required this.futureScope,
     required this.impact,
     this.images, // Optional, default null
   });
 }
-
 
 class Impact {
   final String students;

@@ -99,7 +99,7 @@ class ReuseWidgets{
       ],
     );
   }
-  Widget buildImageList(List<File>? images) {
+  Widget buildImageList(List<String>? images) {
     if (images == null || images.isEmpty) {
       return const Center(
         child: Text(
@@ -133,7 +133,7 @@ class ReuseWidgets{
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(13),
-                child: Image.file(
+                child: Image.network(
                   image,
                   width: 120,
                   height: 120,

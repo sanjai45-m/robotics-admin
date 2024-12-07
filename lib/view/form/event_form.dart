@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:jkv/controller/workshop_data.dart';
 import 'package:provider/provider.dart';
@@ -19,6 +20,8 @@ class _AddWorkShopState extends State<AddWorkShop> {
   final workShopController = TextEditingController();
   final collegeNameController = TextEditingController();
   File? _image;
+
+
   @override
   void dispose() {
     dataController.dispose();
@@ -48,11 +51,11 @@ class _AddWorkShopState extends State<AddWorkShop> {
     }
   }
 
-  void onSubmit() {
+  void onSubmit() async {
     if (_formKey.currentState!.validate()) {
       final provider = Provider.of<WorkshopDataProvider>(context, listen: false);
 
-      // Use tryParse to prevent crashing on invalid date format
+      // Parse the date string to DateTime
       final parsedDate = DateTime.tryParse(dataController.text);
       if (parsedDate == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -61,29 +64,67 @@ class _AddWorkShopState extends State<AddWorkShop> {
         return;
       }
 
-      provider.addWorkshopModelData(
-        parsedDate,
-        workShopController.text,
-        collegeNameController.text,
-        dataController.text,
-        _image!,
-      );
+      // Check if an image is selected
+      if (_image == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Please select an image.")),
+        );
+        return;
+      }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Workshop created successfully")),
-      );
+      try {
+        // Upload image to Firebase Storage and get URL
+        final imageUrl = await uploadImageToFirebase(_image!);
 
-      _resetForm();
-      Navigator.of(context).pop();
+        // Add workshop data with the image URL
+        provider.sendWorkshopDataToFirebase(
+          parsedDate,
+          workShopController.text,
+          collegeNameController.text,
+          dataController.text,
+          imageUrl,
+        );
+
+        // Reload workshops data to ensure it is updated
+        await provider.fetchWorkshopsFromFirebase();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Workshop created successfully")),
+        );
+
+        _resetForm();
+        Navigator.of(context).pop(); // Go back to the previous page
+      } catch (error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to create workshop: $error")),
+        );
+      }
     }
   }
+
+
 
   _resetForm() {
     dataController.clear();
     workShopController.clear();
     collegeNameController.clear();
   }
+  Future<String> uploadImageToFirebase(File image) async {
+    try {
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('workshop_images/${DateTime.now().toIso8601String()}.jpg');
 
+      final uploadTask = storageRef.putFile(image);
+      final snapshot = await uploadTask.whenComplete(() {});
+
+      // Get the download URL of the uploaded image
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (error) {
+      throw Exception("Image upload failed: $error");
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
