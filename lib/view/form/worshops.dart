@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jkv/model/drawers.dart';
 import 'package:jkv/view/form/event_form.dart';
 import 'package:jkv/controller/workshop_data.dart';
 import 'package:provider/provider.dart';
@@ -35,6 +36,7 @@ class _WorkShopsState extends State<WorkShops> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: Drawers(),
       appBar: AppBar(
         title: const Text("WorkShops"),
         backgroundColor: Colors.deepPurpleAccent,
