@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import '../view/form/gallery/gallery_item.dart';
+
 class CategoryService {
   static const String url = 'https://snews-8ed67-default-rtdb.asia-southeast1.firebasedatabase.app/categories.json';
 
@@ -40,6 +42,24 @@ class CategoryService {
       }
     } catch (error) {
       throw Exception('Failed to add category: $error');
+    }
+  }
+  static Future<void> updateGalleryItem(GalleryItem item) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$url/${item.id}.json'), // Use the specific item ID
+        body: json.encode({
+          'title': item.title,
+          'category': item.category,
+          'imageUrl': item.imageUrl,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to update gallery item');
+      }
+    } catch (error) {
+      throw Exception('Failed to update gallery item: $error');
     }
   }
 

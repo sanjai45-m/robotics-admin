@@ -91,7 +91,7 @@ class _AddGalleryItemScreenState extends State<AddGalleryItemScreen> {
             title: _titleController.text,
             category: selectedCategoryName, // Save category name
           );
-          await GalleryService.updateGalleryItem(updatedItem);
+          await GalleryService.updateGalleryItem(updatedItem); // This line should update the item
         } else {
           final newItem = GalleryItem(
             id: DateTime.now().toString(),
@@ -111,6 +111,7 @@ class _AddGalleryItemScreenState extends State<AddGalleryItemScreen> {
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
