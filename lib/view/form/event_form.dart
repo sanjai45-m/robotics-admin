@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:jkv/controller/workshop_data.dart';
+import 'package:loading_indicator/loading_indicator.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -20,6 +21,7 @@ class _AddWorkShopState extends State<AddWorkShop> {
   final workShopController = TextEditingController();
   final collegeNameController = TextEditingController();
   File? _image;
+  bool _isLoading = false; // Add loading state
 
 
   @override
@@ -51,11 +53,10 @@ class _AddWorkShopState extends State<AddWorkShop> {
     }
   }
 
-  void onSubmit() async {
+  Future<void> onSubmit() async {
     if (_formKey.currentState!.validate()) {
       final provider = Provider.of<WorkshopDataProvider>(context, listen: false);
 
-      // Parse the date string to DateTime
       final parsedDate = DateTime.tryParse(dataController.text);
       if (parsedDate == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -64,7 +65,6 @@ class _AddWorkShopState extends State<AddWorkShop> {
         return;
       }
 
-      // Check if an image is selected
       if (_image == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Please select an image.")),
@@ -72,12 +72,14 @@ class _AddWorkShopState extends State<AddWorkShop> {
         return;
       }
 
+      setState(() {
+        _isLoading = true; // Start loading
+      });
+
       try {
-        // Upload image to Firebase Storage and get URL
         final imageUrl = await uploadImageToFirebase(_image!);
 
-        // Add workshop data with the image URL
-        provider.sendWorkshopDataToFirebase(
+        await provider.sendWorkshopDataToFirebase(
           parsedDate,
           workShopController.text,
           collegeNameController.text,
@@ -85,7 +87,6 @@ class _AddWorkShopState extends State<AddWorkShop> {
           imageUrl,
         );
 
-        // Reload workshops data to ensure it is updated
         await provider.fetchWorkshopsFromFirebase();
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -93,15 +94,19 @@ class _AddWorkShopState extends State<AddWorkShop> {
         );
 
         _resetForm();
-        Navigator.of(context).pop(); // Go back to the previous page
+
+        Navigator.of(context).pop(true); // Go back to the previous page with success flag
       } catch (error) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Failed to create workshop: $error")),
         );
+      } finally {
+        setState(() {
+          _isLoading = false; // Stop loading
+        });
       }
     }
   }
-
 
 
   _resetForm() {
@@ -131,7 +136,19 @@ class _AddWorkShopState extends State<AddWorkShop> {
         appBar: AppBar(
           title: const Text("Create a Workshop"),
         ),
-        body: Form(
+        body:_isLoading
+            ? const  Center(
+          child: SizedBox(
+            width: 50,
+            height: 50,
+            child: LoadingIndicator(
+              indicatorType: Indicator.lineScaleParty,
+              colors: [Colors.yellow, Colors.red, Colors.green],
+              pathBackgroundColor: Colors.black,
+            ),
+          ),
+        )  // Show loading indicator
+            : Form(
           key: _formKey,
           child: Padding(
             padding: const EdgeInsets.all(16.0), // Add padding around the form

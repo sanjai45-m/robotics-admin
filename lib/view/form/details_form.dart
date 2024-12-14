@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:loading_indicator/loading_indicator.dart';
 import 'package:provider/provider.dart';
 
 import '../../controller/workshop_data.dart';
@@ -23,6 +24,7 @@ class _DetailsFormState extends State<DetailsForm> {
   late TextEditingController _impactStudentsController;
   late TextEditingController _impactIndustryController;
   late TextEditingController _impactResearchController;
+  bool _isLoading = false;
 
   final List<String> _outcomes = [];
   final List<String> _futureScope = [];
@@ -90,160 +92,174 @@ class _DetailsFormState extends State<DetailsForm> {
             : "Edit Workshop Details"),
         backgroundColor: Colors.teal,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            _buildCard(
-              title: "Description",
-              icon: Icons.description,
-              child: TextField(
-                maxLines: 10,
-                controller: _descriptionController,
-                decoration: _inputDecoration("Enter workshop description"),
-              ),
-            ),
-            _buildCard(
-              title: "Objective",
-              icon: Icons.flag,
-              child: TextField(
-                maxLines: 10,
-                controller: _objectiveController,
-                decoration: _inputDecoration("Enter workshop objective"),
-              ),
-            ),
-            _buildCard(
-              title: "Impact",
-              icon: Icons.deck_rounded,
-              child: Column(
-                children: [
-                  TextField(
-                    maxLines: 10,
-                    controller: _impactStudentsController,
-                    decoration: _inputDecoration("Impact on Students"),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    maxLines: 10,
-                    controller: _impactIndustryController,
-                    decoration: _inputDecoration("Impact on Industry"),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    maxLines: 10,
-                    controller: _impactResearchController,
-                    decoration: _inputDecoration("Impact on Research"),
-                  ),
-                ],
-              ),
-            ),
-            _buildCard(
-              title: "Images",
-              icon: Icons.image,
-              child: Column(
-                children: [
-                  ElevatedButton(
-                    onPressed: _selectImages,
-                    child: const Text("Select Images"),
-                  ),
-                  const SizedBox(height: 10),
-                  _selectedImages.isEmpty
-                      ? const Text("No images selected")
-                      : Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: _selectedImages.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final image = entry.value;
-
-                      return Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black26,
-                                  offset: Offset(0, 2),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.file(
-                                image,
-                                width: 100,
-                                height: 100,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            top: -8,
-                            right: -8,
-                            child: InkWell(
-                              onTap: () {
-                                setState(() {
-                                  _selectedImages.removeAt(index);
-                                });
-                              },
-                              child: const CircleAvatar(
-                                radius: 12,
-                                backgroundColor: Colors.red,
-                                child: Icon(
-                                  Icons.close,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            ),
-            _buildListAdder(
-              "Technologies Used",
-              _technologiesUsed,
-              _technologiesUsedCOntroller,
-              Icons.lightbulb,
-            ),
-            _buildListAdder(
-              "Outcomes",
-              _outcomes,
-              _outcomeController,
-              Icons.check_circle,
-            ),
-            _buildListAdder(
-              "Future Scope",
-              _futureScope,
-              _futureScopeController,
-              Icons.lightbulb,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
-                backgroundColor: Colors.teal,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+      body: Stack(
+        children:[ SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              _buildCard(
+                title: "Description",
+                icon: Icons.description,
+                child: TextField(
+                  maxLines: 10,
+                  controller: _descriptionController,
+                  decoration: _inputDecoration("Enter workshop description"),
                 ),
               ),
-              onPressed: _saveDetails,
-              child: Text(
-                widget.existingDetails == null ? "Add Details" : "Save Changes",
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              _buildCard(
+                title: "Objective",
+                icon: Icons.flag,
+                child: TextField(
+                  maxLines: 10,
+                  controller: _objectiveController,
+                  decoration: _inputDecoration("Enter workshop objective"),
+                ),
+              ),
+              _buildCard(
+                title: "Impact",
+                icon: Icons.deck_rounded,
+                child: Column(
+                  children: [
+                    TextField(
+                      maxLines: 10,
+                      controller: _impactStudentsController,
+                      decoration: _inputDecoration("Impact on Students"),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      maxLines: 10,
+                      controller: _impactIndustryController,
+                      decoration: _inputDecoration("Impact on Industry"),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      maxLines: 10,
+                      controller: _impactResearchController,
+                      decoration: _inputDecoration("Impact on Research"),
+                    ),
+                  ],
+                ),
+              ),
+              _buildCard(
+                title: "Images",
+                icon: Icons.image,
+                child: Column(
+                  children: [
+                    ElevatedButton(
+                      onPressed: _selectImages,
+                      child: const Text("Select Images"),
+                    ),
+                    const SizedBox(height: 10),
+                    _selectedImages.isEmpty
+                        ? const Text("No images selected")
+                        : Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: _selectedImages.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final image = entry.value;
+
+                        return Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              width: 100,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Colors.black26,
+                                    offset: Offset(0, 2),
+                                    blurRadius: 4,
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.file(
+                                  image,
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              top: -8,
+                              right: -8,
+                              child: InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedImages.removeAt(index);
+                                  });
+                                },
+                                child: const CircleAvatar(
+                                  radius: 12,
+                                  backgroundColor: Colors.red,
+                                  child: Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+              _buildListAdder(
+                "Technologies Used",
+                _technologiesUsed,
+                _technologiesUsedCOntroller,
+                Icons.lightbulb,
+              ),
+              _buildListAdder(
+                "Outcomes",
+                _outcomes,
+                _outcomeController,
+                Icons.check_circle,
+              ),
+              _buildListAdder(
+                "Future Scope",
+                _futureScope,
+                _futureScopeController,
+                Icons.lightbulb,
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
+                  backgroundColor: Colors.teal,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onPressed: _saveDetails,
+                child: Text(
+                  widget.existingDetails == null ? "Add Details" : "Save Changes",
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        ),if (_isLoading)
+          const Center(
+            child: SizedBox(
+              width: 50,
+              height: 50,
+              child: LoadingIndicator(
+                indicatorType: Indicator.lineScaleParty,
+                colors: [Colors.yellow, Colors.red, Colors.green],
+                pathBackgroundColor: Colors.black,
               ),
             ),
-          ],
-        ),
+          )
+        ],
       ),
     );
   }
@@ -374,56 +390,68 @@ class _DetailsFormState extends State<DetailsForm> {
       return;
     }
 
+    // Show the loading indicator
+    setState(() {
+      _isLoading = true;
+    });
+
     final List<String> imageUrls = [];
 
-    // Upload all images
-    for (File image in _selectedImages) {
-      try {
+    try {
+      // Upload all images
+      for (File image in _selectedImages) {
         String url = await uploadImageToFirebase(image);
         imageUrls.add(url);
-      } catch (error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Image upload failed: $error")),
-        );
-        return;
       }
+
+      final workshopDetails = AboutWorkshopDetails(
+        description: _descriptionController.text,
+        objective: _objectiveController.text,
+        impact: Impact(
+          students: _impactStudentsController.text,
+          industry: _impactIndustryController.text,
+          research: _impactResearchController.text,
+        ),
+        outcomes: _outcomes,
+        futureScope: _futureScope,
+        technologiesUsed: _technologiesUsed,
+        images: imageUrls,
+      );
+
+      final workshopDataProvider =
+      Provider.of<WorkshopDataProvider>(context, listen: false);
+
+      if (widget.existingDetails != null) {
+        // Update existing workshop
+        workshopDataProvider.updateWorkshopDetailsInFirebase(widget.id, workshopDetails);
+      } else {
+        // Add new workshop
+        workshopDataProvider.addWorkshopDetails(widget.id, workshopDetails);
+      }
+
+      // Send the updated data to Firebase
+      final workshop =
+      workshopDataProvider.workshopModel.firstWhere((w) => w.id == widget.id);
+      await workshopDataProvider.sendWorkshopToFirebase(workshop);
+
+      // Reload the data by calling the provider's fetch method
+      await workshopDataProvider.fetchWorkshopsFromFirebase();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Details saved successfully")),
+      );
+
+      Navigator.pop(context);
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error saving details: $error")),
+      );
+    } finally {
+      // Hide the loading indicator
+      setState(() {
+        _isLoading = false;
+      });
     }
-
-    final workshopDetails = AboutWorkshopDetails(
-      description: _descriptionController.text,
-      objective: _objectiveController.text,
-      impact: Impact(
-        students: _impactStudentsController.text,
-        industry: _impactIndustryController.text,
-        research: _impactResearchController.text,
-      ),
-      outcomes: _outcomes,
-      futureScope: _futureScope,
-      technologiesUsed: _technologiesUsed,
-      images: imageUrls,
-    );
-
-    // Access the data provider
-    final workshopDataProvider = Provider.of<WorkshopDataProvider>(context, listen: false);
-
-    // Check if it's an existing workshop or new workshop
-    if (widget.existingDetails != null) {
-      // Edit existing workshop
-      workshopDataProvider.updateWorkshopDetailsInFirebase(widget.id, workshopDetails);
-    } else {
-      // Add new workshop
-      workshopDataProvider.addWorkshopDetails(widget.id, workshopDetails);
-    }
-
-    // Send the updated data to Firebase
-    final workshop = workshopDataProvider.workshopModel.firstWhere((w) => w.id == widget.id);
-    await workshopDataProvider.sendWorkshopToFirebase(workshop);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Details saved successfully")),
-    );
-
-    Navigator.pop(context);
   }
 
 

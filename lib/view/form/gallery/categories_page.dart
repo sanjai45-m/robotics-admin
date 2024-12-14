@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../model/category_service.dart';
+import '../../../controller/category_service.dart';
+import '../../../model/drawers.dart';
 
 class CategoryScreen extends StatefulWidget {
   @override
@@ -74,6 +75,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const Drawers(activePage: "Categories page",),
       appBar: AppBar(
         title: const Text('Manage Categories'),
         backgroundColor: Colors.deepPurpleAccent,
@@ -139,8 +141,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
                       decoration: BoxDecoration(
                         color: Colors.deepPurple[50],
                         borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          const BoxShadow(
+                        boxShadow: const [
+                          BoxShadow(
                             color: Colors.black26,
                             blurRadius: 4,
                             offset: Offset(2, 2),
@@ -165,11 +167,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addCategory,
-        backgroundColor: Colors.deepPurpleAccent,
-        child: const Icon(Icons.add),
-      ),
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: _addCategory,
+      //   backgroundColor: Colors.deepPurpleAccent,
+      //   child: const Icon(Icons.add),
+      // ),
     );
   }
 }

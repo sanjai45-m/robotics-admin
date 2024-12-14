@@ -20,19 +20,23 @@ dependencies:
   cupertino_icons: ^1.0.6
   cached_network_image: ^3.4.1
   lottie:
+  loading_indicator:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_launcher_icons: "^0.14.2"  # Keep this line, as it installs the launcher icon package
-  flutter_lints: ^3.0.0
+  flutter_launcher_icons: "^0.14.2"
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/new-logo.png"
+  min_sdk_android: 24
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: "assets/images/new-logo.png"
+flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/JKV-logo.png
-
-flutter_icons:  # Corrected section for flutter_launcher_icons configuration
-  android: "launcher_icon"
-  ios: true
-  image_path: "assets/images/JKV-logo.png"
+    - assets/images/new-logo.png

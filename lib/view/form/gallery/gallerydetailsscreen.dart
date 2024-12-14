@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../model/galleryService.dart';
+import '../../../controller/galleryService.dart';
 import 'add_gallery_item.dart';
-import 'gallery_item.dart';
+import '../../../model/gallery_item.dart';
 
 class GalleryDetailScreen extends StatelessWidget {
   final GalleryItem item;

@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:jkv/controller/theme_provider.dart';
 import 'package:jkv/controller/workshop_data.dart';
 import 'package:jkv/view/form/worshops.dart';
 import 'package:provider/provider.dart';
@@ -12,28 +13,33 @@ void main() async{
       projectId: "snews-8ed67",
   storageBucket: "gs://snews-8ed67.appspot.com"));
 
-  runApp(const MyApp());
+  runApp(MultiProvider(
+    providers: [
+      ChangeNotifierProvider(create: (context) => WorkshopDataProvider()),
+      ChangeNotifierProvider(create: (context) => ThemeProvider()),
+    ],
+    child: const MyApp(),
+  ),);
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (BuildContext context) =>WorkshopDataProvider(),
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Flutter Demo',
-        theme: ThemeData(
-
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-          useMaterial3: false,
-        ),
-        home: const WorkShops(),
-      ),
+    return Consumer<ThemeProvider>(
+      builder: (BuildContext context, ThemeProvider themeProvider, Widget? child) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Flutter Demo',
+          theme: ThemeData.light(),
+          darkTheme: ThemeData.dark(),
+          themeMode: themeProvider.themeMode, // Use themeMode from ThemeProvider
+          home: const WorkShops(),
+        );
+      },
     );
   }
 }
+
 

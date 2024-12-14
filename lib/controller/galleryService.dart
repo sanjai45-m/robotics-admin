@@ -1,23 +1,35 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../view/form/gallery/gallery_item.dart';
+import '../model/gallery_item.dart';
 
 class GalleryService {
   static const String databaseUrl = 'https://snews-8ed67-default-rtdb.asia-southeast1.firebasedatabase.app/gallery';
 
   /// Fetch gallery items from the Firebase Realtime Database.
-  static Future<List<GalleryItem>> fetchGalleryItems() async {
-    final response = await http.get(Uri.parse('$databaseUrl.json'));
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      return data.entries
-          .map((entry) => GalleryItem.fromJson({...entry.value, 'id': entry.key}))
-          .toList();
-    } else {
-      throw Exception('Failed to fetch gallery items.');
-    }
+  static Stream<List<GalleryItem>> getGalleryItemsStream() {
+    final controller = StreamController<List<GalleryItem>>();
+
+    Timer.periodic(const Duration(seconds: 5), (_) async {
+      try {
+        final response = await http.get(Uri.parse('$databaseUrl.json'));
+        if (response.statusCode == 200) {
+          final Map<String, dynamic> data = json.decode(response.body);
+          final items = data.entries
+              .map((entry) => GalleryItem.fromJson({...entry.value, 'id': entry.key}))
+              .toList();
+          controller.add(items);
+        } else {
+          controller.addError('Failed to fetch gallery items');
+        }
+      } catch (error) {
+        controller.addError('Error fetching data');
+      }
+    });
+
+    return controller.stream;
   }
 
   /// Add a new gallery item to the Firebase Realtime Database.

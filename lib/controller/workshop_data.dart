@@ -202,6 +202,44 @@ class WorkshopDataProvider with ChangeNotifier {
     }
   }
 
+  Future<void> deleteEvent(String id) async {
+    try {
+      // Fetch all existing workshops to find the key
+      final response = await http.get(Uri.parse(firebaseUrl));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        String? workshopKey;
+
+        // Find the workshop key by matching the id
+        data.forEach((key, value) {
+          if (value['id'] == id) {
+            workshopKey = key;
+          }
+        });
+
+        if (workshopKey != null) {
+          // Delete the workshop with the specific key
+          final deleteUrl = "https://snews-8ed67-default-rtdb.asia-southeast1.firebasedatabase.app/workshop/$workshopKey.json";
+          final deleteResponse = await http.delete(Uri.parse(deleteUrl));
+
+          if (deleteResponse.statusCode == 200) {
+            // Remove locally from the provider list
+            _workshopModel.removeWhere((workshop) => workshop.id.toIso8601String() == id);
+            notifyListeners();
+          } else {
+            throw Exception('Failed to delete workshop from Firebase.');
+          }
+        } else {
+          throw Exception('Workshop not found.');
+        }
+      } else {
+        throw Exception('Failed to fetch workshops.');
+      }
+    } catch (error) {
+      print('Error deleting workshop: $error');
+      throw error;
+    }
+  }
 
   Future<void> updateWorkshopDetailsInFirebase(DateTime id, AboutWorkshopDetails updatedDetails) async {
     // Find the workshop by ID
@@ -243,5 +281,7 @@ class WorkshopDataProvider with ChangeNotifier {
       print("Workshop with ID $id not found");
     }
   }
+
+
 
 }

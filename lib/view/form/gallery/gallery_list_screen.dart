@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../model/galleryService.dart';
+import '../../../controller/galleryService.dart';
+import '../../../model/drawers.dart';
 import 'add_gallery_item.dart';
-import 'gallery_item.dart';
+import '../../../model/gallery_item.dart';
 import 'gallerydetailsscreen.dart';
 
 class GalleryListScreen extends StatefulWidget {
@@ -10,31 +11,39 @@ class GalleryListScreen extends StatefulWidget {
 }
 
 class _GalleryListScreenState extends State<GalleryListScreen> {
-  late Future<List<GalleryItem>> _galleryItems;
+  late Stream<List<GalleryItem>> _galleryItemsStream;
 
   @override
   void initState() {
     super.initState();
-    _galleryItems = GalleryService.fetchGalleryItems();
+    _galleryItemsStream = GalleryService.getGalleryItemsStream();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const Drawers(activePage: "Gallery"),
       appBar: AppBar(
         title: const Text(
           'Gallery',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: Colors.deepPurpleAccent,
         elevation: 4.0,
       ),
-      body: FutureBuilder<List<GalleryItem>>(
-        future: _galleryItems,
+      body: StreamBuilder<List<GalleryItem>>(
+        stream: _galleryItemsStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
+            return const Center(
+              child: Text(
+                'No Gallery Items',
+                style: TextStyle(fontSize: 16, color: Colors.redAccent),
+              ),
+            );
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(
               child: Text(
                 'No Gallery Items',
@@ -92,7 +101,6 @@ class _GalleryListScreenState extends State<GalleryListScreen> {
                                 style: const TextStyle(
                                   fontSize: 16.0,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -118,11 +126,17 @@ class _GalleryListScreenState extends State<GalleryListScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          final refresh = await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const AddGalleryItemScreen()),
           );
+          if (refresh == true) {
+            setState(() {
+              // Simply reload the stream to update the gallery
+              _galleryItemsStream = GalleryService.getGalleryItemsStream();
+            });
+          }
         },
         backgroundColor: Colors.deepPurpleAccent,
         child: const Icon(Icons.add, color: Colors.white),

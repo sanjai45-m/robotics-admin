@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-import '../view/form/gallery/gallery_item.dart';
+import '../model/gallery_item.dart';
 
 class CategoryService {
   static const String url = 'https://snews-8ed67-default-rtdb.asia-southeast1.firebasedatabase.app/categories.json';

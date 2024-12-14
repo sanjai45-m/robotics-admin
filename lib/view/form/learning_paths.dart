@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:jkv/model/drawers.dart';
 
 import 'edit_training_content.dart';
 
@@ -55,6 +56,7 @@ class _TrainingProgramsState extends State<TrainingPrograms> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const Drawers(activePage: "Learning Paths"),
       appBar: AppBar(
         title: const Text(
           "Industry-Leading Training Programs",

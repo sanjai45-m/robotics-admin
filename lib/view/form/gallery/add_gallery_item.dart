@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../model/category_service.dart';
-import '../../../model/galleryService.dart';
-import 'gallery_item.dart';
+import '../../../controller/category_service.dart';
+import '../../../controller/galleryService.dart';
+import '../../../model/gallery_item.dart';
 
 class AddGalleryItemScreen extends StatefulWidget {
   final GalleryItem? editItem;
@@ -18,6 +18,8 @@ class _AddGalleryItemScreenState extends State<AddGalleryItemScreen> {
   final _titleController = TextEditingController();
   String? _selectedCategory;
   String? _imagePath;
+  bool loading = false; // New variable to track loading state
+
   Map<String, String> categories = {}; // Initialize as a map instead of a list
 
   @override
@@ -71,16 +73,21 @@ class _AddGalleryItemScreenState extends State<AddGalleryItemScreen> {
     if (_titleController.text.isNotEmpty &&
         _selectedCategory != null &&
         _imagePath != null) {
+      setState(() {
+        loading = true; // Start loading
+      });
+
       try {
         final imageUrl = await GalleryService.uploadImage(_imagePath!);
-
-        // Get the category name from the selected category ID
         final selectedCategoryName = categories[_selectedCategory!];
 
         if (selectedCategoryName == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Invalid category selected.')),
           );
+          setState(() {
+            loading = false; // Stop loading
+          });
           return;
         }
 
@@ -89,21 +96,32 @@ class _AddGalleryItemScreenState extends State<AddGalleryItemScreen> {
             id: widget.editItem!.id,
             imageUrl: imageUrl,
             title: _titleController.text,
-            category: selectedCategoryName, // Save category name
+            category: selectedCategoryName,
           );
-          await GalleryService.updateGalleryItem(updatedItem); // This line should update the item
+          await GalleryService.updateGalleryItem(updatedItem);
         } else {
           final newItem = GalleryItem(
             id: DateTime.now().toString(),
             imageUrl: imageUrl,
             title: _titleController.text,
-            category: selectedCategoryName, // Save category name
+            category: selectedCategoryName,
           );
           await GalleryService.addGalleryItem(newItem);
         }
-        Navigator.pop(context);
+
+        setState(() {
+          loading = false; // Stop loading
+        });
+
+        Navigator.pop(context, true); // Pass true to indicate refresh
       } catch (error) {
+        setState(() {
+          loading = false; // Stop loading
+        });
         print(error);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to save item.')),
+        );
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -121,118 +139,125 @@ class _AddGalleryItemScreenState extends State<AddGalleryItemScreen> {
         backgroundColor: Colors.deepPurpleAccent,
         elevation: 4.0,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Add New Item',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.deepPurpleAccent,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 8,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: _titleController,
-                        decoration: InputDecoration(
-                          labelText: 'Title',
-                          labelStyle: const TextStyle(color: Colors.deepPurple),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      if (categories.isNotEmpty)
-                        DropdownButtonFormField<String>(
-                          value: _selectedCategory,
-                          items: categories.entries.map((entry) {
-                            return DropdownMenuItem<String>(
-                              value: entry.key, // Use key as value
-                              child: Text(entry.value), // Display name
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedCategory = value;
-                            });
-                          },
-                          decoration: InputDecoration(
-                            labelText: 'Category',
-                            labelStyle:
-                            const TextStyle(color: Colors.deepPurple),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 16.0, horizontal: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          backgroundColor: Colors.deepPurpleAccent,
-                          elevation: 4.0,
-                        ),
-                        onPressed: _pickImage,
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.camera_alt, color: Colors.white),
-                            SizedBox(width: 8),
-                            Text(
-                              'Pick an Image',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (_imagePath != null) ...[
-                        const SizedBox(height: 16),
-                        _imagePath!.startsWith('http')
-                            ? Image.network(_imagePath!)
-                            : Image.file(File(_imagePath!)),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 40),
-              Center(
-                child: ElevatedButton(
-                  onPressed: _saveItem,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurpleAccent,
-                    padding: const EdgeInsets.symmetric(horizontal: 40),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+      body:  Stack(
+        children: [
+          SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Add New Item',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.deepPurpleAccent,
                     ),
                   ),
-                  child: Text(
-                    widget.editItem != null ? 'Update Item' : 'Add Item',
-                    style: const TextStyle(fontSize: 18),
+                  const SizedBox(height: 20),
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 8,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          TextField(
+                            controller: _titleController,
+                            decoration: InputDecoration(
+                              labelText: 'Title',
+                              labelStyle: const TextStyle(color: Colors.deepPurple),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          if (categories.isNotEmpty)
+                            DropdownButtonFormField<String>(
+                              value: _selectedCategory,
+                              items: categories.entries.map((entry) {
+                                return DropdownMenuItem<String>(
+                                  value: entry.key,
+                                  child: Text(entry.value),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedCategory = value;
+                                });
+                              },
+                              decoration: InputDecoration(
+                                labelText: 'Category',
+                                labelStyle: const TextStyle(color: Colors.deepPurple),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          const SizedBox(height: 20),
+                          ElevatedButton(
+                            onPressed: _pickImage,
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 16.0, horizontal: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              backgroundColor: Colors.deepPurpleAccent,
+                              elevation: 4.0,
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.camera_alt, color: Colors.white),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Pick an Image',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (_imagePath != null) ...[
+                            const SizedBox(height: 16),
+                            _imagePath!.startsWith('http')
+                                ? Image.network(_imagePath!)
+                                : Image.file(File(_imagePath!)),
+                          ],
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 40),
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: _saveItem,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurpleAccent,
+                        padding: const EdgeInsets.symmetric(horizontal: 40),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      child: Text(
+                        widget.editItem != null ? 'Update Item' : 'Add Item',
+                        style: const TextStyle(fontSize: 18,color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+          if (loading)
+            const Center(
+              child: CircularProgressIndicator(),
+            ),
+        ],
       ),
     );
   }

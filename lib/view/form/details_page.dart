@@ -45,7 +45,7 @@ class _DetailPageState extends State<DetailPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(workshop.workshopName),
-        backgroundColor: Colors.teal,
+        backgroundColor: Colors.deepPurpleAccent,
       ),
       body: details == null
           ? const Center(
